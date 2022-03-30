@@ -1,0 +1,20 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Convert digramm to png
+      uses: Burnett01/actions-drawio@1.2
+      with:
+        src: er.drawio
+        dest: export.png
+    - name: Upload images as artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: png
+        path: export.png
