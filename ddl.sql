@@ -43,14 +43,14 @@ create table [User]
     phone     varchar(255),
     type      varchar(255) not null,
     institute integer,
-    city      integer,
+    state    integer,
     primary key (id)
 );
 
 alter table [User]
     add constraint FK_User_Institute foreign key (institute) references Institute (id);
 alter table [User]
-    add constraint FK_User_City foreign key (city) references City (id);
+    add constraint FK_User_State foreign key (state) references State (id);
 
 create table Role
 (
