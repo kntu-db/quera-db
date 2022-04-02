@@ -299,3 +299,102 @@ alter table Submit_Test
 alter table Submit_Test
     add constraint FK_Submit_Test_User foreign key (problem, "user", time) references Submit (problem, "user", time);
 -- End of ProblemSet
+
+--magnet
+create table Company(
+    id int primary key identity (1,1),
+    name varchar,
+    founded_date DATE,
+    ???,
+    website varchar,
+    description varchar,
+    image ??,
+    employer varchar,
+    address varchar,
+    title varchar
+);
+alter table Company add foreign key (employer) references Employer(id);
+alter table Company add foreign key (address) references Address(id);
+alter table Company add foreign key (title) references Field(title);
+
+
+create table JobOffer(
+    id int primary key identity(1,1),
+    name varchar,
+    PWD ??,
+    city varchar,
+    date DATE,
+    right varchar,
+    title varchar,
+    ???
+    company_name varchar
+);
+alter table JobOffer add foreign key (name) references Company(name);
+
+create table Demand(
+    id int primary key identity (1,1),
+    description varchar,
+    date DATE,
+    file varchar,
+    joboffer_id int
+);
+alter table Demand add foreign key (joboffer_id) references JobOffer(id);
+
+create table Technology(
+    id int primary key identity (1,1) ,
+    title varchar,
+    ???
+);
+
+create table Field
+(
+    id int primary key identity (1,1),
+    title varchar
+);
+
+create table Employer
+(
+    id   int primary key identity (1,1),
+    name varchar
+);
+alter table Employer add foreign key (name) references Company(name);
+
+create table Link
+(
+    id   int primary key identity (1,1),
+    URI  varchar,
+    type varchar,
+    name varchar
+);
+alter table Link add foreign key (name) references Company(name);
+
+create table Advantage(
+    id   int primary key identity (1,1),
+    title  varchar
+);
+
+create table Address(
+    id   int primary key identity (1,1),
+    location  varchar,
+    address varchar,
+    company_id varchar,
+    state varchar
+);
+alter table Address add foreign key (company_id) references Company(id);
+alter table Address add foreign key (state) references State(id);
+
+create table Relation_job_tech(
+    joboffer varchar FOREIGN KEY REFRENCES JobOffer(name),
+    tech varchar FOREIGN KEY REFRENCES Technology(title)
+);
+
+create table Relation_company_tech(
+    tech varchar FOREIGN KEY REFRENCES Technology(title),
+    name varchar FOREIGN KEY REFRENCES Company(name)
+);
+
+create table Relation_company_advantage(
+    company varchar FOREIGN KEY REFRENCES Company(name),
+    advantage varchar FOREIGN KEY REFRENCES Advantage(title)
+);
+--end of magnet
