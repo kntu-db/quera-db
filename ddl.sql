@@ -110,9 +110,11 @@ create table HomeWork
 (
     id    integer,
     class integer not null,
-    primary key (id)
+    primary key (id),
+    
+    class varchar(255) not null
 );
-
+alter table HomeWork add foreign key(class) refrences Class(id);
 alter table HomeWork
     add constraint FK_HomeWork_ProblemSet foreign key (id) references ProblemSet (id);
 -- alter table HomeWork
@@ -301,34 +303,35 @@ alter table Submit_Test
 -- End of ProblemSet
 
 
+
 --magnet
 create table Company(
     name varchar UNIQUE ,
     founded_date date,
-    logo varchar,
-    website varchar,
-    description varchar,
+    logo varchar(255) not null ,
+    website varchar(255) not null,
+    description varchar(255) not null,
 
-    employer varchar,
-    address varchar,
-    title varchar,
-    size int
+    employer varchar(255) not null,
+    address varchar(255) not null,
+    title varchar(255) not null,
+    size int not null
 );
-alter table Company add foreign key (employer) references Employer(mail);
+alter table Company add foreign key (employer) references employer(mail);
 alter table Company add foreign key (address) references Address(id);
 alter table Company add foreign key (title) references Field(title);
 alter table Company add foreign key (size) references CompanySize(id);
 
 create table Relation_company_advantage(
-    name varchar,
-    title varchar
+    name varchar(255) not null,
+    title varchar(255) not null
 );
 alter table Relation_company_advantage add foreign key (name) references Company(name);
 alter table Relation_company_advantage add foreign key (title) references Advantage(title);
 
 create table Relation_company_tech(
-    name varchar,
-    title varchar
+    name varchar(255) not null,
+    title varchar(255) not null
 );
 alter table Relation_company_advantage add foreign key (name) references Company(name);
 alter table Relation_company_advantage add foreign key (title) references Technology(title);
@@ -339,32 +342,32 @@ alter table Relation_company_advantage add foreign key (title) references Techno
 create table JobOffer(
     id serial primary key UNIQUE ,
     date date,
-    level varchar,
-    cooperation varchar,
-    work_distance varchar,
-    rights varchar,
-    title varchar,
+    level varchar(255) not null,
+    cooperation varchar(255) not null,
+    work_distance varchar(255) not null,
+    rights varchar(255) not null,
+    title varchar(255) not null,
 
-    company_name varchar,
-    state varchar
+    company_name varchar(255) not null,
+    state varchar(255) not null
 );
 alter table JobOffer add foreign key (state) references State(name);
 alter table JobOffer add foreign key (company_name) references Company(name);
 
 create table Demand(
-    description varchar,
+    description varchar(255) not null,
     date date,
-    CV_URI varchar,
+    CV_URI varchar(255) not null,
 
-    joboffer_id int,
-    mail varchar
+    joboffer_id int not null,
+    mail varchar(255) not null
 );
 alter table Demand add foreign key (joboffer_id) references JobOffer(id);
-alter table Demand add foreign key (mail) references Developer(mail);
+alter table Demand add foreign key (mail) references developer(mail);
 
 create table Relation_joboffer_tech(
-    job_ID varchar,
-    title varchar
+    job_ID varchar(255) not null,
+    title varchar(255) not null
 );
 alter table Relation_joboffer_tech add foreign key (job_ID) references JobOffer(id);
 alter table Relation_joboffer_tech add foreign key (title) references Technology(title);
@@ -374,86 +377,110 @@ alter table Relation_joboffer_tech add foreign key (title) references Technology
 
 
 create table Technology(
-    title varchar UNIQUE ,
+    title varchar(255) not null UNIQUE ,
 
-    category varchar
+    category varchar(255) not null
 );
 alter table Technology add foreign key (category) references TechnologyCategory(title);
 
 
 create table TechnologyCategory(
-    title varchar UNIQUE
+    title varchar(255) not null UNIQUE
 );
 
 create table Field
 (
-    title varchar UNIQUE
+    title varchar(255) not null UNIQUE
 );
 
 create table CompanySize
 (
-    id serial primary key UNIQUE ,
-    minSize int,
-    maxSize int
+    id serial primary key not null UNIQUE ,
+    minSize int not null ,
+    maxSize int not null
 );
 
-create table Employer
-(
-   id serial primary key,
-   name varchar
-);
-alter table Employer add foreign key (name) references Company(name);
 
 create table Link
 (
-    id serial primary key UNIQUE ,
-    URI  varchar,
+    id serial primary key not null UNIQUE ,
+    URI  varchar(255) not null,
 
-    title varchar,
-    name varchar
+    title varchar(255) not null,
+    name varchar(255) not null
 );
 alter table Link add foreign key (name) references Company(name);
 alter table Link add foreign key (title) references LinkType(title);
 
 
 create table LinkType(
-    title varchar UNIQUE ,
-    logo varchar
+    title varchar(255) not null UNIQUE ,
+    logo varchar(255) not null
 );
 
 
 create table Advantage(
-    title  varchar UNIQUE
+    title  varchar (255) not null UNIQUE
 );
 
 create table Address(
-    id serial primary key UNIQUE ,
-    Geo_point  varchar,
-    address varchar,
+    id serial primary key not null UNIQUE ,
+    Geo_point  varchar(255) not null,
+    address varchar(255) not null,
 
-    company_name varchar,
-    state varchar
+    state varchar(255) not null
 );
-alter table Address add foreign key (company_name) references Company(name);
 alter table Address add foreign key (state) references State(name);
+
+
 
 
 create table Link
 (
-   id serial primary key UNIQUE ,
-   URI varchar,
-   
-   type varchar
+   id serial primary key not null UNIQUE ,
+   URI varchar(255) not null,
+
+   type varchar(255) not null
 );
 alter table Link add foreign key (type) references LinkType(title);
 
-????
-create table Employer
-(
-  company_name varchar
-);
-alter table Employer add foreign key (company_name) references Company(name);
-???
-
-
 --end of magnet
+
+
+--education
+
+create table Semester(
+    id serial primary key  not null  UNIQUE,
+    turn varchar(255) not null ,
+    from varchar(255) not null,
+    to varchar(255)not null
+);
+
+create table Class(
+    id serial primary key  not null UNIQUE ,
+    title varchar(255)not null,
+    prof varchar(255)not null,
+    --primary key (title,prof),
+    description varchar(255)not null,
+    phone int not null,
+    password varchar(255)not null,
+    max_count int not null,
+    archived varchar(255)not null,
+    open_to_register varchar(255)not null,
+
+    semester varchar(255)not null,
+    institute varchar(255)not null
+);
+alter table Class add foreign key (semester) references Semester(id);
+alter table Class add foreign key (institute) references Institute(name);
+
+
+create table relationship_class_developer(
+    student_number int not null,
+
+    class varchar(255)not null,
+    mail varchar(255)not null
+);
+alter table relationship_class_developer add foreign key (class) references Class(id);
+alter table relationship_class_developer add foreign key (mail) references developer(mail);
+--end of education
