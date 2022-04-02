@@ -300,101 +300,160 @@ alter table Submit_Test
     add constraint FK_Submit_Test_User foreign key (problem, "user", time) references Submit (problem, "user", time);
 -- End of ProblemSet
 
+
 --magnet
 create table Company(
-    id int primary key identity (1,1),
-    name varchar,
-    founded_date DATE,
-    ???,
+    name varchar UNIQUE ,
+    founded_date date,
+    logo varchar,
     website varchar,
     description varchar,
-    image ??,
+
     employer varchar,
     address varchar,
-    title varchar
+    title varchar,
+    size int
 );
-alter table Company add foreign key (employer) references Employer(id);
+alter table Company add foreign key (employer) references Employer(mail);
 alter table Company add foreign key (address) references Address(id);
 alter table Company add foreign key (title) references Field(title);
+alter table Company add foreign key (size) references CompanySize(id);
+
+create table Relation_company_advantage(
+    name varchar,
+    title varchar
+);
+alter table Relation_company_advantage add foreign key (name) references Company(name);
+alter table Relation_company_advantage add foreign key (title) references Advantage(title);
+
+create table Relation_company_tech(
+    name varchar,
+    title varchar
+);
+alter table Relation_company_advantage add foreign key (name) references Company(name);
+alter table Relation_company_advantage add foreign key (title) references Technology(title);
+
+
 
 
 create table JobOffer(
-    id int primary key identity(1,1),
-    name varchar,
-    PWD ??,
-    city varchar,
-    date DATE,
-    right varchar,
+    id serial primary key UNIQUE ,
+    date date,
+    level varchar,
+    cooperation varchar,
+    work_distance varchar,
+    rights varchar,
     title varchar,
-    ???
-    company_name varchar
+
+    company_name varchar,
+    state varchar
 );
-alter table JobOffer add foreign key (name) references Company(name);
+alter table JobOffer add foreign key (state) references State(name);
+alter table JobOffer add foreign key (company_name) references Company(name);
 
 create table Demand(
-    id int primary key identity (1,1),
     description varchar,
-    date DATE,
-    file varchar,
-    joboffer_id int
+    date date,
+    CV_URI varchar,
+
+    joboffer_id int,
+    mail varchar
 );
 alter table Demand add foreign key (joboffer_id) references JobOffer(id);
+alter table Demand add foreign key (mail) references Developer(mail);
+
+create table Relation_joboffer_tech(
+    job_ID varchar,
+    title varchar
+);
+alter table Relation_joboffer_tech add foreign key (job_ID) references JobOffer(id);
+alter table Relation_joboffer_tech add foreign key (title) references Technology(title);
+
+
+
+
 
 create table Technology(
-    id int primary key identity (1,1) ,
-    title varchar,
-    ???
+    title varchar UNIQUE ,
+
+    category varchar
+);
+alter table Technology add foreign key (category) references TechnologyCategory(title);
+
+
+create table TechnologyCategory(
+    title varchar UNIQUE
 );
 
 create table Field
 (
-    id int primary key identity (1,1),
-    title varchar
+    title varchar UNIQUE
+);
+
+create table CompanySize
+(
+    id serial primary key UNIQUE ,
+    minSize int,
+    maxSize int
 );
 
 create table Employer
 (
-    id   int primary key identity (1,1),
-    name varchar
+   id serial primary key,
+   name varchar
 );
 alter table Employer add foreign key (name) references Company(name);
 
 create table Link
 (
-    id   int primary key identity (1,1),
+    id serial primary key UNIQUE ,
     URI  varchar,
-    type varchar,
+
+    title varchar,
     name varchar
 );
 alter table Link add foreign key (name) references Company(name);
+alter table Link add foreign key (title) references LinkType(title);
+
+
+create table LinkType(
+    title varchar UNIQUE ,
+    logo varchar
+);
+
 
 create table Advantage(
-    id   int primary key identity (1,1),
-    title  varchar
+    title  varchar UNIQUE
 );
 
 create table Address(
-    id   int primary key identity (1,1),
-    location  varchar,
+    id serial primary key UNIQUE ,
+    Geo_point  varchar,
     address varchar,
-    company_id varchar,
+
+    company_name varchar,
     state varchar
 );
-alter table Address add foreign key (company_id) references Company(id);
-alter table Address add foreign key (state) references State(id);
+alter table Address add foreign key (company_name) references Company(name);
+alter table Address add foreign key (state) references State(name);
 
-create table Relation_job_tech(
-    joboffer varchar FOREIGN KEY REFRENCES JobOffer(name),
-    tech varchar FOREIGN KEY REFRENCES Technology(title)
-);
 
-create table Relation_company_tech(
-    tech varchar FOREIGN KEY REFRENCES Technology(title),
-    name varchar FOREIGN KEY REFRENCES Company(name)
+create table Link
+(
+   id serial primary key UNIQUE ,
+   URI varchar,
+   
+   type varchar
 );
+alter table Link add foreign key (type) references LinkType(title);
 
-create table Relation_company_advantage(
-    company varchar FOREIGN KEY REFRENCES Company(name),
-    advantage varchar FOREIGN KEY REFRENCES Advantage(title)
+????
+create table Employer
+(
+  company_name varchar
 );
+alter table Employer add foreign key (company_name) references Company(name);
+???
+
+
 --end of magnet
