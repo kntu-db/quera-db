@@ -1,14 +1,25 @@
 -- SQL Dialect : PostgreSQL
 
 -- Authentication
-create table City
+create table State
 (
-    id   serial       not null,
+    id   serial,
     name varchar(255) not null,
     primary key (id)
 );
 
-create type InstituteType as enum
+create table City
+(
+    id    serial,
+    name  varchar(255) not null,
+    state integer      not null,
+    primary key (id)
+);
+
+alter table City
+    add constraint FK_State_City foreign key (state) references State (id);
+
+create type institutetype as enum
     (
         'university',
         'school',
@@ -17,37 +28,26 @@ create type InstituteType as enum
 
 create table Institute
 (
-    id      serial        not null,
+    id      serial,
     name    varchar(255)  not null,
-    type    InstituteType not null,
+    type    institutetype not null,
     city    integer       not null,
-    address varchar(255),
     website varchar(255),
+    "user"  integer       not null,
     primary key (id)
 );
 
 alter table Institute
     add constraint FK_Institute_City foreign key (city) references City (id);
 
-create table State
-(
-    id   serial       not null,
-    name varchar(255) not null,
-    city integer      not null,
-    primary key (id)
-);
-
-alter table State
-    add constraint FK_State_City foreign key (city) references City (id);
-
-create type UserStatus as enum
+create type userstatus as enum
     (
         'active',
         'inactive',
         'not_verified'
         );
 
-create type UserType as enum
+create type usertype as enum
     (
         'developer',
         'employer',
@@ -56,27 +56,30 @@ create type UserType as enum
 
 create table "User"
 (
-    id        serial       not null,
+    id        serial,
     mail      varchar(255) not null,
     password  varchar(255) not null,
     name      varchar(255),
-    status    UserStatus   not null default 'not_verified',
+    status    userstatus   not null default 'not_verified',
     phone     varchar(255),
-    type      UserType     not null,
+    type      usertype     not null,
     institute integer,
-    state     integer,
-    unique (mail),
+    city      integer,
     primary key (id)
 );
 
 alter table "User"
+    add constraint U_User_Mail unique (mail);
+alter table "User"
     add constraint FK_User_Institute foreign key (institute) references Institute (id);
 alter table "User"
-    add constraint FK_User_State foreign key (state) references State (id);
+    add constraint FK_User_City foreign key (city) references City (id);
+alter table Institute
+    add constraint FK_Institute_User foreign key ("user") references "User" (id);
 
 create table Role
 (
-    id    serial       not null,
+    id    serial,
     title varchar(255) not null,
     primary key (id)
 );
@@ -97,7 +100,7 @@ alter table User_Role
 -- ProblemSet
 create table ProblemSet
 (
-    id            serial       not null,
+    id            serial,
     title         varchar(255) not null,
     description   text,
     start         timestamp    not null,
@@ -110,15 +113,11 @@ create table HomeWork
 (
     id    integer,
     class integer not null,
-    primary key (id),
-    
-    class varchar(255) not null
+    primary key (id)
 );
-alter table HomeWork add foreign key(class) refrences Class(id);
+
 alter table HomeWork
     add constraint FK_HomeWork_ProblemSet foreign key (id) references ProblemSet (id);
--- alter table HomeWork
---     add constraint FK_HomeWork_Class foreign key (class) references Class (id);
 
 create table Contest
 (
@@ -130,45 +129,46 @@ create table Contest
 alter table Contest
     add constraint FK_Contest_ProblemSet foreign key (id) references ProblemSet (id);
 
-create table Participation
+create table ProblemSetParticipation
 (
-    "user"  integer not null,
-    contest integer not null,
-    primary key ("user", contest)
+    "user"     integer not null,
+    problemSet integer not null,
+    primary key ("user", problemSet)
 );
 
-alter table Participation
-    add constraint FK_Participation_User foreign key ("user") references "User" (id);
-alter table Participation
-    add constraint FK_Participation_Contest foreign key (contest) references Contest (id);
+alter table ProblemSetParticipation
+    add constraint FK_ProblemSetParticipation_User foreign key ("user") references "User" (id);
+alter table ProblemSetParticipation
+    add constraint FK_ProblemSetParticipation_Contest foreign key (problemSet) references ProblemSet (id);
 
 create table ProblemCategory
 (
-    id   serial       not null,
+    id   serial,
     name varchar(255) not null,
     primary key (id)
 );
 
 create table ProblemTag
 (
-    id   serial       not null,
+    id   serial,
     name varchar(255) not null,
     primary key (id)
 );
 
 create table Problem
 (
-    id       serial       not null,
+    id       serial,
     number   integer      not null,
     contest  integer      not null,
     title    varchar(255) not null,
     text     text,
     score    integer      not null,
     category integer      not null,
-    unique (number, contest),
     primary key (id)
 );
 
+alter table Problem
+    add constraint U_Problem_Number_Contest unique (number, contest);
 alter table Problem
     add constraint FK_Problem_Contest foreign key (contest) references Contest (id);
 alter table Problem
@@ -242,14 +242,14 @@ create table DockerizedTest
 alter table DockerizedTest
     add constraint FK_DockerizedTest_Problem foreign key (problem, number) references Test (problem, number);
 
-create type SubmitStatus as enum (
+create type submitstatus as enum (
     'received',
     'queued',
     'running',
     'accepted'
     );
 
-create type SubmitType as enum
+create type submittype as enum
     (
         'git',
         'upload'
@@ -261,11 +261,11 @@ create table Submit
     problem   integer      not null,
     "user"    integer      not null,
     time      timestamp    not null,
-    solveTime integer,
-    status    SubmitStatus not null default 'queued',
+    solveTime integer      not null,
+    status    submitstatus not null default 'queued',
     uri       varchar(255) not null,
-    type      SubmitType   not null default 'upload',
-    score     integer      not null,
+    type      submittype   not null default 'upload',
+    score     integer      not null default 0,
     inContest boolean      not null,
     final     boolean      not null,
     primary key (problem, "user", time)
@@ -276,7 +276,7 @@ alter table Submit
 alter table Submit
     add constraint FK_Submit_User foreign key ("user") references "User" (id);
 
-create type SubmitTestStatus as enum
+create type submitteststatus as enum
     (
         'wrong-answer',
         'compilation-error',
@@ -288,11 +288,11 @@ create type SubmitTestStatus as enum
 
 create table Submit_Test
 (
-    problem integer     not null,
-    number  integer     not null,
-    "user"  integer     not null,
-    time    timestamp   not null,
-    status  SubmitTestStatus not null,
+    problem integer          not null,
+    number  integer          not null,
+    "user"  integer          not null,
+    time    timestamp        not null,
+    status  submitteststatus not null,
     primary key (problem, number, "user", time)
 );
 
@@ -301,186 +301,237 @@ alter table Submit_Test
 alter table Submit_Test
     add constraint FK_Submit_Test_User foreign key (problem, "user", time) references Submit (problem, "user", time);
 -- End of ProblemSet
-
-
-
---magnet
-create table Company(
-    name varchar UNIQUE ,
-    foundedDate date,
-    logo varchar(255) not null ,
-    website varchar(255) not null,
-    description varchar(255) not null,
-
-    employer varchar(255) not null,
-    address varchar(255) not null,
-    title varchar(255) not null,
-    size int not null
-);
-alter table Company add foreign key (employer) references employer(mail);
-alter table Company add foreign key (address) references Address(id);
-alter table Company add foreign key (title) references Field(title);
-alter table Company add foreign key (size) references CompanySize(id);
-
-create table Relation_Company_Advantage(
-    name varchar(255) not null,
-    title varchar(255) not null
-);
-alter table Relation_Company_Advantage add foreign key (name) references Company(name);
-alter table Relation_Company_Advantage add foreign key (title) references Advantage(title);
-
-create table Relation_Company_Tech(
-    name varchar(255) not null,
-    title varchar(255) not null
-);
-alter table Relation_Company_Tech add foreign key (name) references Company(name);
-alter table Relation_Company_Tech add foreign key (title) references Technology(title);
-
-
-
-
-create table JobOffer(
-    id serial primary key UNIQUE ,
-    date date,
-    level varchar(255) not null,
-    cooperation varchar(255) not null,
-    workDistance varchar(255) not null,
-    rights varchar(255) not null,
-    title varchar(255) not null,
-
-    companyName varchar(255) not null,
-    state varchar(255) not null
-);
-alter table JobOffer add foreign key (state) references State(name);
-alter table JobOffer add foreign key (companyName) references Company(name);
-
-create table Demand(
-    description varchar(255) not null,
-    date date,
-    CV_URI varchar(255) not null,
-
-    jobOfferId int not null,
-    mail varchar(255) not null
-);
-alter table Demand add foreign key (jobOfferId) references JobOffer(id);
-alter table Demand add foreign key (mail) references developer(mail);
-
-create table Relation_JobOffer_Tech(
-    job_ID varchar(255) not null,
-    title varchar(255) not null
-);
-alter table Relation_JobOffer_Tech add foreign key (job_ID) references JobOffer(id);
-alter table Relation_JobOffer_Tech add foreign key (title) references Technology(title);
-
-
-
-
-
-create table Technology(
-    title varchar(255) not null UNIQUE ,
-
-    category varchar(255) not null
-);
-alter table Technology add foreign key (category) references TechnologyCategory(title);
-
-
-create table TechnologyCategory(
-    title varchar(255) not null UNIQUE
-);
-
+-- Magnet
 create table Field
 (
-    title varchar(255) not null UNIQUE
+    id    serial,
+    title varchar(255) not null,
+    primary key (id)
 );
 
 create table CompanySize
 (
-    id serial primary key not null UNIQUE ,
-    minSize int not null ,
-    maxSize int not null
+    id      serial,
+    minSize int not null,
+    maxSize int not null,
+    primary key (id)
 );
 
-
-create table Link
+create table Advantage
 (
-    id serial primary key not null UNIQUE ,
-    URI  varchar(255) not null,
-
+    id    serial,
     title varchar(255) not null,
-    name varchar(255) not null
-);
-alter table Link add foreign key (name) references Company(name);
-alter table Link add foreign key (title) references LinkType(title);
-
-
-create table LinkType(
-    title varchar(255) not null UNIQUE ,
-    logo varchar(255) not null
+    primary key (id)
 );
 
-
-create table Advantage(
-    title  varchar (255) not null UNIQUE
-);
-
-create table Address(
-    id serial primary key not null UNIQUE ,
-    GeoPoint  varchar(255) not null,
-    address varchar(255) not null,
-
-    state varchar(255) not null
-);
-alter table Address add foreign key (state) references State(name);
-
-
-
-
-create table Link
+create table TechnologyCategory
 (
-   id serial primary key not null UNIQUE ,
-   URI varchar(255) not null,
-
-   type varchar(255) not null
-);
-alter table Link add foreign key (type) references LinkType(title);
-
---end of magnet
-
-
---education
-
-create table Semester(
-    id serial primary key  not null  UNIQUE,
-    turn varchar(255) not null ,
-    from varchar(255) not null,
-    to varchar(255)not null
+    id    serial,
+    title varchar(255) not null,
+    primary key (id)
 );
 
-create table Class(
-    id serial primary key  not null UNIQUE ,
-    title varchar(255)not null,
-    prof varchar(255)not null,
-    description varchar(255)not null,
-    phone int not null,
-    password varchar(255)not null,
-    maxCount int not null,
-    archived varchar(255)not null,
-    openToRegister varchar(255)not null,
-
-    semester varchar(255)not null,
-    institute varchar(255)not null
+create table Technology
+(
+    id       serial,
+    title    varchar(255) not null,
+    category integer,
+    primary key (id)
 );
-alter table Class add foreign key (semester) references Semester(id);
-alter table Class add foreign key (institute) references Institute(name);
 
+alter table Technology
+    add constraint FK_Technology_Category foreign key (category) references TechnologyCategory (id);
 
-create table Relationship_Class_Developer(
-    studentNumber int not null,
-
-    class varchar(255)not null,
-    mail varchar(255)not null
+create table Address
+(
+    id       serial,
+    geoPoint point        not null,
+    address  varchar(255) not null,
+    city     integer      not null,
+    primary key (id)
 );
-alter table Relationship_Class_Developer add foreign key (class) references Class(id);
-alter table Relationship_Class_Developer add foreign key (mail) references developer(mail);
 
---end of ducation
+alter table Address
+    add constraint FK_Address_City foreign key (city) references City (id);
+
+create table Company
+(
+    id          serial,
+    name        varchar(255) not null,
+    foundedDate date,
+    website     varchar(255),
+    description text         not null,
+    logo        varchar(255) not null,
+    employer    integer      not null,
+    address     integer      not null,
+    title       varchar(255) not null,
+    size        int          not null,
+    field       integer      not null,
+    primary key (id)
+);
+
+alter table Company
+    add constraint FK_Company_Employer foreign key (employer) references "User" (id);
+alter table Company
+    add constraint FK_Company_Address foreign key (address) references Address (id);
+alter table Company
+    add constraint FK_Company_Field foreign key (field) references Field (id);
+alter table Company
+    add constraint FK_Company_Size foreign key (size) references CompanySize (id);
+
+create table Company_Advantage
+(
+    company   integer not null,
+    advantage integer not null,
+    primary key (company, advantage)
+);
+
+alter table Company_Advantage
+    add constraint FK_Company_Advantage_Company foreign key (company) references Company (id);
+alter table Company_Advantage
+    add constraint FK_Company_Advantage_Advantage foreign key (advantage) references Advantage (id);
+
+create table Company_Technology
+(
+    company    integer not null,
+    technology integer not null,
+    primary key (company, technology)
+);
+
+alter table Company_Technology
+    add constraint FK_Company_Technology_Company foreign key (company) references Company (id);
+alter table Company_Technology
+    add constraint FK_Company_Technology_Technology foreign key (technology) references Technology (id);
+
+create type developerlevel as enum
+    (
+        'junior',
+        'middle',
+        'senior'
+        );
+
+create type jobcooperation as enum
+    (
+        'part-time',
+        'full-time',
+        'internship'
+        );
+
+create table JobOffer
+(
+    id           serial,
+    date         date,
+    level        developerlevel not null,
+    cooperation  jobcooperation not null,
+    workDistance boolean        not null,
+    salary       integer,
+    title        varchar(255)   not null,
+    company      integer        not null,
+    city         integer        not null,
+    primary key (id)
+);
+
+alter table JobOffer
+    add constraint FK_JobOffer_Company foreign key (company) references Company (id);
+alter table JobOffer
+    add constraint FK_JobOffer_City foreign key (city) references City (id);
+
+create table Demand
+(
+    developer   integer      not null,
+    jobOffer    integer      not null,
+    description varchar(255) not null,
+    date        date,
+    cvUri       varchar(255) not null,
+    primary key (developer, jobOffer)
+);
+
+alter table Demand
+    add constraint FK_Demand_Developer foreign key (developer) references "User" (id);
+alter table Demand
+    add constraint FK_Demand_JobOffer foreign key (jobOffer) references JobOffer (id);
+
+create table JobOffer_Technology
+(
+    jobOffer   integer not null,
+    technology integer not null,
+    primary key (jobOffer, technology)
+);
+
+alter table JobOffer_Technology
+    add constraint FK_JobOffer_Technology_JobOffer foreign key (jobOffer) references JobOffer (id);
+alter table JobOffer_Technology
+    add constraint FK_JobOffer_Technology_Technology foreign key (technology) references Technology (id);
+
+create table LinkType
+(
+    id    serial,
+    title varchar(255) not null,
+    logo  varchar(255) not null,
+    primary key (id)
+);
+
+create table CompanyLink
+(
+    linkType integer      not null,
+    company  integer      not null,
+    url      varchar(255) not null,
+    primary key (linkType, company)
+);
+
+alter table CompanyLink
+    add constraint FK_Link_LinkType foreign key (linkType) references LinkType (id);
+alter table CompanyLink
+    add constraint FK_Link_Company foreign key (company) references Company (id);
+-- End of Magnet
+-- Education
+create type semesterturn as enum (
+    'fall',
+    'spring',
+    'summer'
+    );
+
+create table Semester
+(
+    id   serial,
+    turn semesterturn not null,
+    year integer      not null,
+    primary key (id)
+);
+
+create table Class
+(
+    id             serial,
+    title          varchar(255) not null,
+    professor      varchar(255) not null,
+    description    varchar(255) not null,
+    phone          integer,
+    password       varchar(255) not null,
+    maxCount       integer,
+    archived       boolean      not null default false,
+    openToRegister boolean      not null default true,
+    semester       integer      not null,
+    institute      integer      not null,
+    primary key (id)
+);
+
+alter table Class
+    add constraint FK_Class_Semester foreign key (semester) references Semester (id);
+alter table Class
+    add constraint FK_Class_Institute foreign key (institute) references Institute (id);
+alter table HomeWork
+    add constraint FK_HomeWork_Class foreign key (class) references Class (id);
+
+create table ClassParticipation
+(
+    class         integer not null,
+    developer     integer not null,
+    studentNumber integer not null,
+    primary key (class, developer)
+);
+
+alter table ClassParticipation
+    add constraint FK_Class_Developer_Class foreign key (class) references Class (id);
+alter table ClassParticipation
+    add constraint FK_Class_Developer_Developer foreign key (developer) references "User" (id);
+-- End of Education
