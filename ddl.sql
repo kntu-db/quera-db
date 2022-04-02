@@ -307,7 +307,7 @@ alter table Submit_Test
 --magnet
 create table Company(
     name varchar UNIQUE ,
-    founded_date date,
+    foundedDate date,
     logo varchar(255) not null ,
     website varchar(255) not null,
     description varchar(255) not null,
@@ -322,19 +322,19 @@ alter table Company add foreign key (address) references Address(id);
 alter table Company add foreign key (title) references Field(title);
 alter table Company add foreign key (size) references CompanySize(id);
 
-create table Relation_company_advantage(
+create table Relation_Company_Advantage(
     name varchar(255) not null,
     title varchar(255) not null
 );
-alter table Relation_company_advantage add foreign key (name) references Company(name);
-alter table Relation_company_advantage add foreign key (title) references Advantage(title);
+alter table Relation_Company_Advantage add foreign key (name) references Company(name);
+alter table Relation_Company_Advantage add foreign key (title) references Advantage(title);
 
-create table Relation_company_tech(
+create table Relation_Company_Tech(
     name varchar(255) not null,
     title varchar(255) not null
 );
-alter table Relation_company_advantage add foreign key (name) references Company(name);
-alter table Relation_company_advantage add foreign key (title) references Technology(title);
+alter table Relation_Company_Tech add foreign key (name) references Company(name);
+alter table Relation_Company_Tech add foreign key (title) references Technology(title);
 
 
 
@@ -344,33 +344,33 @@ create table JobOffer(
     date date,
     level varchar(255) not null,
     cooperation varchar(255) not null,
-    work_distance varchar(255) not null,
+    workDistance varchar(255) not null,
     rights varchar(255) not null,
     title varchar(255) not null,
 
-    company_name varchar(255) not null,
+    companyName varchar(255) not null,
     state varchar(255) not null
 );
 alter table JobOffer add foreign key (state) references State(name);
-alter table JobOffer add foreign key (company_name) references Company(name);
+alter table JobOffer add foreign key (companyName) references Company(name);
 
 create table Demand(
     description varchar(255) not null,
     date date,
     CV_URI varchar(255) not null,
 
-    joboffer_id int not null,
+    jobOfferId int not null,
     mail varchar(255) not null
 );
-alter table Demand add foreign key (joboffer_id) references JobOffer(id);
+alter table Demand add foreign key (jobOfferId) references JobOffer(id);
 alter table Demand add foreign key (mail) references developer(mail);
 
-create table Relation_joboffer_tech(
+create table Relation_JobOffer_Tech(
     job_ID varchar(255) not null,
     title varchar(255) not null
 );
-alter table Relation_joboffer_tech add foreign key (job_ID) references JobOffer(id);
-alter table Relation_joboffer_tech add foreign key (title) references Technology(title);
+alter table Relation_JobOffer_Tech add foreign key (job_ID) references JobOffer(id);
+alter table Relation_JobOffer_Tech add foreign key (title) references Technology(title);
 
 
 
@@ -425,7 +425,7 @@ create table Advantage(
 
 create table Address(
     id serial primary key not null UNIQUE ,
-    Geo_point  varchar(255) not null,
+    GeoPoint  varchar(255) not null,
     address varchar(255) not null,
 
     state varchar(255) not null
@@ -460,13 +460,12 @@ create table Class(
     id serial primary key  not null UNIQUE ,
     title varchar(255)not null,
     prof varchar(255)not null,
-    --primary key (title,prof),
     description varchar(255)not null,
     phone int not null,
     password varchar(255)not null,
-    max_count int not null,
+    maxCount int not null,
     archived varchar(255)not null,
-    open_to_register varchar(255)not null,
+    openToRegister varchar(255)not null,
 
     semester varchar(255)not null,
     institute varchar(255)not null
@@ -475,12 +474,13 @@ alter table Class add foreign key (semester) references Semester(id);
 alter table Class add foreign key (institute) references Institute(name);
 
 
-create table relationship_class_developer(
-    student_number int not null,
+create table Relationship_Class_Developer(
+    studentNumber int not null,
 
     class varchar(255)not null,
     mail varchar(255)not null
 );
-alter table relationship_class_developer add foreign key (class) references Class(id);
-alter table relationship_class_developer add foreign key (mail) references developer(mail);
---end of education
+alter table Relationship_Class_Developer add foreign key (class) references Class(id);
+alter table Relationship_Class_Developer add foreign key (mail) references developer(mail);
+
+--end of ducation
