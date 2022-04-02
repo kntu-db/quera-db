@@ -1,19 +1,26 @@
--- SQL Dialect : Microsoft SQL Server
+-- SQL Dialect : PostgreSQL
 
 -- Authentication
 create table City
 (
-    id   integer identity,
+    id   serial       not null,
     name varchar(255) not null,
     primary key (id)
 );
 
+create type InstituteType as enum
+    (
+        'university',
+        'school',
+        'institute'
+        );
+
 create table Institute
 (
-    id      integer identity,
-    name    varchar(255) not null,
-    type    varchar(255) not null,
-    city    integer      not null,
+    id      serial        not null,
+    name    varchar(255)  not null,
+    type    InstituteType not null,
+    city    integer       not null,
     address varchar(255),
     website varchar(255),
     primary key (id)
@@ -24,7 +31,7 @@ alter table Institute
 
 create table State
 (
-    id   integer identity,
+    id   serial       not null,
     name varchar(255) not null,
     city integer      not null,
     primary key (id)
@@ -33,54 +40,69 @@ create table State
 alter table State
     add constraint FK_State_City foreign key (city) references City (id);
 
-create table [User]
+create type UserStatus as enum
+    (
+        'active',
+        'inactive',
+        'not_verified'
+        );
+
+create type UserType as enum
+    (
+        'developer',
+        'employer',
+        'manager'
+        );
+
+create table "User"
 (
-    id        integer identity,
+    id        serial       not null,
     mail      varchar(255) not null,
     password  varchar(255) not null,
     name      varchar(255),
-    status    varchar(255) not null default 'not_verified',
+    status    UserStatus   not null default 'not_verified',
     phone     varchar(255),
-    type      varchar(255) not null,
+    type      UserType     not null,
     institute integer,
-    state    integer,
+    state     integer,
+    unique (mail),
     primary key (id)
 );
 
-alter table [User]
+alter table "User"
     add constraint FK_User_Institute foreign key (institute) references Institute (id);
-alter table [User]
+alter table "User"
     add constraint FK_User_State foreign key (state) references State (id);
 
 create table Role
 (
-    id   integer identity,
-    name varchar(255) not null,
+    id    serial       not null,
+    title varchar(255) not null,
     primary key (id)
 );
 
 create table User_Role
 (
-    [user]     integer not null,
+    "user"     integer not null,
     role       integer not null,
-    expiration datetime,
-    primary key ([user], role)
+    expiration timestamp,
+    primary key ("user", role)
 );
 
 alter table User_Role
-    add constraint FK_User_Role_User foreign key ([user]) references [User] (id);
+    add constraint FK_User_Role_User foreign key ("user") references "User" (id);
 alter table User_Role
     add constraint FK_User_Role_Role foreign key (role) references Role (id);
 -- End of authentication
 -- ProblemSet
 create table ProblemSet
 (
-    id            integer identity,
+    id            serial       not null,
     title         varchar(255) not null,
-    description   varchar(max),
-    start         datetime     not null,
-    end           datetime,
-    visibleScores bit          not null default 1,
+    description   text,
+    start         timestamp    not null,
+    "end"         timestamp,
+    visibleScores boolean      not null default true,
     primary key (id)
 );
 
@@ -108,37 +130,37 @@ alter table Contest
 
 create table Participation
 (
-    [user]  integer not null,
+    "user"  integer not null,
     contest integer not null,
-    primary key ([user], contest)
+    primary key ("user", contest)
 );
 
 alter table Participation
-    add constraint FK_Participation_User foreign key ([user]) references [User] (id);
+    add constraint FK_Participation_User foreign key ("user") references "User" (id);
 alter table Participation
     add constraint FK_Participation_Contest foreign key (contest) references Contest (id);
 
 create table ProblemCategory
 (
-    id   integer identity,
+    id   serial       not null,
     name varchar(255) not null,
     primary key (id)
 );
 
 create table ProblemTag
 (
-    id   integer identity,
+    id   serial       not null,
     name varchar(255) not null,
     primary key (id)
 );
 
 create table Problem
 (
-    id       integer identity,
+    id       serial       not null,
     number   integer      not null,
     contest  integer      not null,
     title    varchar(255) not null,
-    text     varchar(max),
+    text     text,
     score    integer      not null,
     category integer      not null,
     unique (number, contest),
@@ -167,7 +189,7 @@ create table Extension
     extension varchar(16)  not null,
     name      varchar(255) not null,
     primary key (extension)
-)
+);
 
 create table Problem_Extension
 (
@@ -190,7 +212,7 @@ create table Test
     title   varchar(255) not null,
     score   integer      not null,
     primary key (problem, number)
-)
+);
 
 alter table Test
     add constraint FK_Test_Problem foreign key (problem) references Problem (id);
@@ -199,8 +221,8 @@ create table IoTest
 (
     number  integer not null,
     problem integer not null,
-    input   varchar(max),
-    output  varchar(max),
+    input   text,
+    output  text,
     primary key (problem, number)
 );
 
@@ -218,38 +240,62 @@ create table DockerizedTest
 alter table DockerizedTest
     add constraint FK_DockerizedTest_Problem foreign key (problem, number) references Test (problem, number);
 
+create type SubmitStatus as enum (
+    'received',
+    'queued',
+    'running',
+    'accepted'
+    );
+
+create type SubmitType as enum
+    (
+        'git',
+        'upload'
+        );
+
+
 create table Submit
 (
     problem   integer      not null,
-    [user]    integer      not null,
-    time      datetime     not null,
+    "user"    integer      not null,
+    time      timestamp    not null,
     solveTime integer,
-    status    integer      not null default 'queued',
+    status    SubmitStatus not null default 'queued',
     uri       varchar(255) not null,
-    type      varchar(16)  not null,
+    type      SubmitType   not null default 'upload',
     score     integer      not null,
-    inContest bit          not null,
-    final     bit          not null,
-    primary key (problem, [user], time)
-)
+    inContest boolean      not null,
+    final     boolean      not null,
+    primary key (problem, "user", time)
+);
 
 alter table Submit
     add constraint FK_Submit_Problem foreign key (problem) references Problem (id);
 alter table Submit
-    add constraint FK_Submit_User foreign key ([user]) references [User] (id);
+    add constraint FK_Submit_User foreign key ("user") references "User" (id);
+
+create type SubmitTestStatus as enum
+    (
+        'wrong-answer',
+        'compilation-error',
+        'runtime-error',
+        'time-limit-exceeded',
+        'memory-limit-exceeded',
+        'accepted'
+        );
 
 create table Submit_Test
 (
     problem integer     not null,
     number  integer     not null,
-    [user]  integer     not null,
-    time    datetime    not null,
-    status  varchar(16) not null,
-    primary key (problem, number, [user], time)
+    "user"  integer     not null,
+    time    timestamp   not null,
+    status  SubmitTestStatus not null,
+    primary key (problem, number, "user", time)
 );
 
 alter table Submit_Test
     add constraint FK_Submit_Test_Problem_Number foreign key (problem, number) references Test (problem, number);
 alter table Submit_Test
-    add constraint FK_Submit_Test_User foreign key (problem, [user], time) references Submit (problem, [user], time);
+    add constraint FK_Submit_Test_User foreign key (problem, "user", time) references Submit (problem, "user", time);
 -- End of ProblemSet
