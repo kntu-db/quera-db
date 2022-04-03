@@ -54,7 +54,8 @@ create type usertype as enum
         'manager'
         );
 
-create table "User"
+-- because of sql is case-insensitive, we need to use lowercase
+create table "user"
 (
     id        serial,
     mail      varchar(255) not null,
@@ -65,17 +66,19 @@ create table "User"
     type      usertype     not null,
     institute integer,
     city      integer,
+    public    boolean      not null default true,
     primary key (id)
 );
 
-alter table "User"
+alter table "user"
     add constraint U_User_Mail unique (mail);
-alter table "User"
-    add constraint FK_User_Institute foreign key (institute) references Institute (id);
-alter table "User"
+alter table "user"
+    add constraint FK_User_Institute foreign key (institute) references Institute (id)
+        on update cascade on delete set null;
+alter table "user"
     add constraint FK_User_City foreign key (city) references City (id);
 alter table Institute
-    add constraint FK_Institute_User foreign key ("user") references "User" (id);
+    add constraint FK_Institute_User foreign key ("user") references "user" (id);
 
 create table Role
 (
@@ -93,41 +96,31 @@ create table User_Role
 );
 
 alter table User_Role
-    add constraint FK_User_Role_User foreign key ("user") references "User" (id);
+    add constraint FK_User_Role_User foreign key ("user") references "user" (id);
 alter table User_Role
-    add constraint FK_User_Role_Role foreign key (role) references Role (id);
--- End of authentication
+    add constraint FK_User_Role_Role foreign key (role) references Role (id)
+        on delete cascade;
+-- End of Authentication
 -- ProblemSet
+create type problemsettype as enum (
+    'contest',
+    'practice'
+    );
+
 create table ProblemSet
 (
     id            serial,
-    title         varchar(255) not null,
+    title         varchar(255)   not null,
     description   text,
-    start         timestamp    not null,
+    start         timestamp      not null,
     "end"         timestamp,
-    visibleScores boolean      not null default true,
+    visibleScores boolean        not null default true,
+    visible       boolean        not null default true,
+    type          problemsettype not null,
+    class         integer,
+    sponsor       varchar(255),
     primary key (id)
 );
-
-create table HomeWork
-(
-    id    integer,
-    class integer not null,
-    primary key (id)
-);
-
-alter table HomeWork
-    add constraint FK_HomeWork_ProblemSet foreign key (id) references ProblemSet (id);
-
-create table Contest
-(
-    id      integer,
-    sponsor varchar(255) not null,
-    primary key (id)
-);
-
-alter table Contest
-    add constraint FK_Contest_ProblemSet foreign key (id) references ProblemSet (id);
 
 create table ProblemSetParticipation
 (
@@ -137,9 +130,10 @@ create table ProblemSetParticipation
 );
 
 alter table ProblemSetParticipation
-    add constraint FK_ProblemSetParticipation_User foreign key ("user") references "User" (id);
+    add constraint FK_ProblemSetParticipation_User foreign key ("user") references "user" (id);
 alter table ProblemSetParticipation
-    add constraint FK_ProblemSetParticipation_Contest foreign key (problemSet) references ProblemSet (id);
+    add constraint FK_ProblemSetParticipation_ProblemSet foreign key (problemSet) references ProblemSet (id)
+        on delete cascade;
 
 create table ProblemCategory
 (
@@ -157,22 +151,24 @@ create table ProblemTag
 
 create table Problem
 (
-    id       serial,
-    number   integer      not null,
-    contest  integer      not null,
-    title    varchar(255) not null,
-    text     text,
-    score    integer      not null,
-    category integer      not null,
+    id         serial,
+    number     integer      not null,
+    problemSet integer      not null,
+    title      varchar(255) not null,
+    text       text         not null,
+    score      integer      not null,
+    category   integer,
     primary key (id)
 );
 
 alter table Problem
-    add constraint U_Problem_Number_Contest unique (number, contest);
+    add constraint FK_Problem_ProblemSet_Number_Unique unique (problemSet, number);
 alter table Problem
-    add constraint FK_Problem_Contest foreign key (contest) references Contest (id);
+    add constraint FK_Problem_ProblemSet foreign key (problemSet) references ProblemSet (id)
+        on delete cascade;
 alter table Problem
-    add constraint FK_Problem_ProblemCategory foreign key (category) references ProblemCategory (id);
+    add constraint FK_Problem_ProblemCategory foreign key (category) references ProblemCategory (id)
+        on delete set null;
 
 create table Problem_Tag
 (
@@ -182,9 +178,11 @@ create table Problem_Tag
 );
 
 alter table Problem_Tag
-    add constraint FK_Problem_Tag_Problem foreign key (problem) references Problem (id);
+    add constraint FK_Problem_Tag_Problem foreign key (problem) references Problem (id)
+        on delete cascade;
 alter table Problem_Tag
-    add constraint FK_Problem_Tag_Tag foreign key (tag) references ProblemTag (id);
+    add constraint FK_Problem_Tag_Tag foreign key (tag) references ProblemTag (id)
+        on delete cascade;
 
 create table Extension
 (
@@ -203,9 +201,11 @@ create table Problem_Extension
 );
 
 alter table Problem_Extension
-    add constraint FK_Problem_Extension_Problem foreign key (problem) references Problem (id);
+    add constraint FK_Problem_Extension_Problem foreign key (problem) references Problem (id)
+        on delete cascade;
 alter table Problem_Extension
-    add constraint FK_Problem_Extension_Extension foreign key (extension) references Extension (extension);
+    add constraint FK_Problem_Extension_Extension foreign key (extension) references Extension (extension)
+        on update cascade;
 
 create table Test
 (
@@ -217,7 +217,8 @@ create table Test
 );
 
 alter table Test
-    add constraint FK_Test_Problem foreign key (problem) references Problem (id);
+    add constraint FK_Test_Problem foreign key (problem) references Problem (id)
+        on delete cascade;
 
 create table IoTest
 (
@@ -229,7 +230,8 @@ create table IoTest
 );
 
 alter table IoTest
-    add constraint FK_IoTest_Problem foreign key (problem, number) references Test (problem, number);
+    add constraint FK_IoTest_Problem foreign key (problem, number) references Test (problem, number)
+        on delete cascade;
 
 create table DockerizedTest
 (
@@ -240,13 +242,26 @@ create table DockerizedTest
 );
 
 alter table DockerizedTest
-    add constraint FK_DockerizedTest_Problem foreign key (problem, number) references Test (problem, number);
+    add constraint FK_DockerizedTest_Problem foreign key (problem, number) references Test (problem, number)
+        on delete cascade;
+
+create table WebTest
+(
+    number  integer      not null,
+    problem integer      not null,
+    package varchar(255) not null,
+    primary key (problem, number)
+);
+
+alter table WebTest
+    add constraint FK_WebTest_Problem foreign key (problem, number) references Test (problem, number)
+        on delete cascade;
 
 create type submitstatus as enum (
     'received',
     'queued',
     'running',
-    'accepted'
+    'judged'
     );
 
 create type submittype as enum
@@ -254,7 +269,6 @@ create type submittype as enum
         'git',
         'upload'
         );
-
 
 create table Submit
 (
@@ -272,17 +286,18 @@ create table Submit
 );
 
 alter table Submit
-    add constraint FK_Submit_Problem foreign key (problem) references Problem (id);
+    add constraint FK_Submit_Problem foreign key (problem) references Problem (id)
+        on delete cascade;
 alter table Submit
-    add constraint FK_Submit_User foreign key ("user") references "User" (id);
+    add constraint FK_Submit_User foreign key ("user") references "user" (id);
 
 create type submitteststatus as enum
     (
-        'wrong-answer',
-        'compilation-error',
-        'runtime-error',
-        'time-limit-exceeded',
-        'memory-limit-exceeded',
+        'wrong_answer',
+        'compilation_error',
+        'runtime_error',
+        'time_limit_exceeded',
+        'memory_limit_exceeded',
         'accepted'
         );
 
@@ -297,9 +312,11 @@ create table Submit_Test
 );
 
 alter table Submit_Test
-    add constraint FK_Submit_Test_Problem_Number foreign key (problem, number) references Test (problem, number);
+    add constraint FK_Submit_Test_Problem_Number foreign key (problem, number) references Test (problem, number)
+        on delete cascade;
 alter table Submit_Test
-    add constraint FK_Submit_Test_User foreign key (problem, "user", time) references Submit (problem, "user", time);
+    add constraint FK_Submit_Test_User foreign key (problem, "user", time) references Submit (problem, "user", time)
+        on delete cascade;
 -- End of ProblemSet
 -- Magnet
 create table Field
@@ -340,7 +357,8 @@ create table Technology
 );
 
 alter table Technology
-    add constraint FK_Technology_Category foreign key (category) references TechnologyCategory (id);
+    add constraint FK_Technology_Category foreign key (category) references TechnologyCategory (id)
+        on delete set null;
 
 create table Address
 (
@@ -371,7 +389,7 @@ create table Company
 );
 
 alter table Company
-    add constraint FK_Company_Employer foreign key (employer) references "User" (id);
+    add constraint FK_Company_Employer foreign key (employer) references "user" (id);
 alter table Company
     add constraint FK_Company_Address foreign key (address) references Address (id);
 alter table Company
@@ -387,9 +405,11 @@ create table Company_Advantage
 );
 
 alter table Company_Advantage
-    add constraint FK_Company_Advantage_Company foreign key (company) references Company (id);
+    add constraint FK_Company_Advantage_Company foreign key (company) references Company (id)
+        on delete cascade;
 alter table Company_Advantage
-    add constraint FK_Company_Advantage_Advantage foreign key (advantage) references Advantage (id);
+    add constraint FK_Company_Advantage_Advantage foreign key (advantage) references Advantage (id)
+        on delete cascade;
 
 create table Company_Technology
 (
@@ -399,28 +419,30 @@ create table Company_Technology
 );
 
 alter table Company_Technology
-    add constraint FK_Company_Technology_Company foreign key (company) references Company (id);
+    add constraint FK_Company_Technology_Company foreign key (company) references Company (id)
+        on delete cascade;
 alter table Company_Technology
     add constraint FK_Company_Technology_Technology foreign key (technology) references Technology (id);
 
 create type developerlevel as enum
     (
+        'intern',
         'junior',
         'middle',
-        'senior'
+        'senior',
+        'lead'
         );
 
 create type jobcooperation as enum
     (
-        'part-time',
-        'full-time',
-        'internship'
+        'part_time',
+        'full_time'
         );
 
 create table JobOffer
 (
     id           serial,
-    date         date,
+    createdAt    timestamp,
     level        developerlevel not null,
     cooperation  jobcooperation not null,
     workDistance boolean        not null,
@@ -428,11 +450,14 @@ create table JobOffer
     title        varchar(255)   not null,
     company      integer        not null,
     city         integer        not null,
+    description  text           not null,
+    expired      boolean        not null default false,
     primary key (id)
 );
 
 alter table JobOffer
-    add constraint FK_JobOffer_Company foreign key (company) references Company (id);
+    add constraint FK_JobOffer_Company foreign key (company) references Company (id)
+        on delete cascade;
 alter table JobOffer
     add constraint FK_JobOffer_City foreign key (city) references City (id);
 
@@ -441,15 +466,16 @@ create table Demand
     developer   integer      not null,
     jobOffer    integer      not null,
     description varchar(255) not null,
-    date        date,
+    time        timestamp    not null,
     cvUri       varchar(255) not null,
     primary key (developer, jobOffer)
 );
 
 alter table Demand
-    add constraint FK_Demand_Developer foreign key (developer) references "User" (id);
+    add constraint FK_Demand_Developer foreign key (developer) references "user" (id);
 alter table Demand
-    add constraint FK_Demand_JobOffer foreign key (jobOffer) references JobOffer (id);
+    add constraint FK_Demand_JobOffer foreign key (jobOffer) references JobOffer (id)
+        on delete cascade;
 
 create table JobOffer_Technology
 (
@@ -459,7 +485,8 @@ create table JobOffer_Technology
 );
 
 alter table JobOffer_Technology
-    add constraint FK_JobOffer_Technology_JobOffer foreign key (jobOffer) references JobOffer (id);
+    add constraint FK_JobOffer_Technology_JobOffer foreign key (jobOffer) references JobOffer (id)
+        on delete cascade;
 alter table JobOffer_Technology
     add constraint FK_JobOffer_Technology_Technology foreign key (technology) references Technology (id);
 
@@ -480,9 +507,11 @@ create table CompanyLink
 );
 
 alter table CompanyLink
-    add constraint FK_Link_LinkType foreign key (linkType) references LinkType (id);
+    add constraint FK_Link_LinkType foreign key (linkType) references LinkType (id)
+        on delete cascade;
 alter table CompanyLink
-    add constraint FK_Link_Company foreign key (company) references Company (id);
+    add constraint FK_Link_Company foreign key (company) references Company (id)
+        on delete cascade;
 -- End of Magnet
 -- Education
 create type semesterturn as enum (
@@ -518,9 +547,11 @@ create table Class
 alter table Class
     add constraint FK_Class_Semester foreign key (semester) references Semester (id);
 alter table Class
-    add constraint FK_Class_Institute foreign key (institute) references Institute (id);
-alter table HomeWork
-    add constraint FK_HomeWork_Class foreign key (class) references Class (id);
+    add constraint FK_Class_Institute foreign key (institute) references Institute (id)
+        on delete cascade;
+alter table ProblemSet
+    add constraint FK_ProblemSet_Class foreign key (class) references Class (id)
+        on delete cascade;
 
 create table ClassParticipation
 (
@@ -531,7 +562,8 @@ create table ClassParticipation
 );
 
 alter table ClassParticipation
-    add constraint FK_Class_Developer_Class foreign key (class) references Class (id);
+    add constraint FK_Class_Developer_Class foreign key (class) references Class (id)
+        on delete cascade;
 alter table ClassParticipation
-    add constraint FK_Class_Developer_Developer foreign key (developer) references "User" (id);
+    add constraint FK_Class_Developer_Developer foreign key (developer) references "user" (id);
 -- End of Education
