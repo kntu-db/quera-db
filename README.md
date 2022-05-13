@@ -5,7 +5,13 @@
 - [ ] Change address to property
 - [ ] Link type is enum so linkType entity should be removed 
 - [ ] ProblemTag should be property
-- [ ] Add create relation to class
+- [ ] Add create relation between class and developer
+- [ ] Public practices in problemset
+- [ ] Add relation between company and contest (sponser)
+- [ ] User can be removed :|, add cascades
+- [ ] Add register date for users
+- [ ] Add public after archieve for class
+- [ ] Remove these entities and change to property: Semester, Address, LinkType, Field, ProblemTag
 
 ## How to contribute
 ---
