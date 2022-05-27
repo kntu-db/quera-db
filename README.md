@@ -12,6 +12,7 @@
 - [ ] Add register date for users
 - [ ] Add public after archieve for class
 - [ ] Remove these entities and change to property: Semester, Address, LinkType, Field, ProblemTag
+- [ ] Convert all weak entities to strong entity (All entities should have id as primary key)
 
 ## How to contribute
 ---
